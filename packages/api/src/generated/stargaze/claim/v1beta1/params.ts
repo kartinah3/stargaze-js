@@ -1,235 +1,373 @@
 /* eslint-disable */
-import { Duration } from '../../../google/protobuf/duration';
-import { Timestamp } from '../../../google/protobuf/timestamp';
-import * as Long from 'long';
-import { util, configure, Writer, Reader } from 'protobufjs/minimal';
+import {
+  Action,
+  actionFromJSON,
+  actionToJSON,
+} from "../../../stargaze/claim/v1beta1/claim_record";
+import { Duration } from "../../../google/protobuf/duration";
+import { Timestamp } from "../../../google/protobuf/timestamp";
+import * as Long from "long";
+import { util, configure, Writer, Reader } from "protobufjs/minimal";
 
-export const protobufPackage = 'stargaze.claim.v1beta1';
+export const protobufPackage = "publicawesome.stargaze.claim.v1beta1";
+
+export interface ClaimAuthorization {
+  contractAddress: string;
+  action: Action;
+}
 
 /** Params defines the claim module's parameters. */
 export interface Params {
-	airdropStartTime?: Date;
-	durationUntilDecay?: Duration;
-	durationOfDecay?: Duration;
-	/** denom of claimable asset */
-	claimDenom: string;
+  airdropEnabled: boolean;
+  airdropStartTime?: Date;
+  durationUntilDecay?: Duration;
+  durationOfDecay?: Duration;
+  /** denom of claimable asset */
+  claimDenom: string;
+  /** list of contracts and their allowed claim actions */
+  allowedClaimers: ClaimAuthorization[];
 }
 
-const baseParams: object = { claimDenom: '' };
+const baseClaimAuthorization: object = { contractAddress: "", action: 0 };
+
+export const ClaimAuthorization = {
+  encode(
+    message: ClaimAuthorization,
+    writer: Writer = Writer.create()
+  ): Writer {
+    if (message.contractAddress !== "") {
+      writer.uint32(10).string(message.contractAddress);
+    }
+    if (message.action !== 0) {
+      writer.uint32(16).int32(message.action);
+    }
+    return writer;
+  },
+
+  decode(input: Reader | Uint8Array, length?: number): ClaimAuthorization {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = globalThis.Object.create(
+      baseClaimAuthorization
+    ) as ClaimAuthorization;
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.contractAddress = reader.string();
+          break;
+        case 2:
+          message.action = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimAuthorization {
+    const message = globalThis.Object.create(
+      baseClaimAuthorization
+    ) as ClaimAuthorization;
+    if (
+      object.contractAddress !== undefined &&
+      object.contractAddress !== null
+    ) {
+      message.contractAddress = String(object.contractAddress);
+    } else {
+      message.contractAddress = "";
+    }
+    if (object.action !== undefined && object.action !== null) {
+      message.action = actionFromJSON(object.action);
+    } else {
+      message.action = 0;
+    }
+    return message;
+  },
+
+  fromPartial(object: DeepPartial<ClaimAuthorization>): ClaimAuthorization {
+    const message = { ...baseClaimAuthorization } as ClaimAuthorization;
+    if (
+      object.contractAddress !== undefined &&
+      object.contractAddress !== null
+    ) {
+      message.contractAddress = object.contractAddress;
+    } else {
+      message.contractAddress = "";
+    }
+    if (object.action !== undefined && object.action !== null) {
+      message.action = object.action;
+    } else {
+      message.action = 0;
+    }
+    return message;
+  },
+
+  toJSON(message: ClaimAuthorization): unknown {
+    const obj: any = {};
+    message.contractAddress !== undefined &&
+      (obj.contractAddress = message.contractAddress);
+    message.action !== undefined && (obj.action = actionToJSON(message.action));
+    return obj;
+  },
+};
+
+const baseParams: object = { airdropEnabled: false, claimDenom: "" };
 
 export const Params = {
-	encode(message: Params, writer: Writer = Writer.create()): Writer {
-		if (message.airdropStartTime !== undefined) {
-			Timestamp.encode(
-				toTimestamp(message.airdropStartTime),
-				writer.uint32(10).fork()
-			).ldelim();
-		}
-		if (message.durationUntilDecay !== undefined) {
-			Duration.encode(
-				message.durationUntilDecay,
-				writer.uint32(18).fork()
-			).ldelim();
-		}
-		if (message.durationOfDecay !== undefined) {
-			Duration.encode(
-				message.durationOfDecay,
-				writer.uint32(26).fork()
-			).ldelim();
-		}
-		if (message.claimDenom !== '') {
-			writer.uint32(34).string(message.claimDenom);
-		}
-		return writer;
-	},
+  encode(message: Params, writer: Writer = Writer.create()): Writer {
+    if (message.airdropEnabled === true) {
+      writer.uint32(8).bool(message.airdropEnabled);
+    }
+    if (message.airdropStartTime !== undefined) {
+      Timestamp.encode(
+        toTimestamp(message.airdropStartTime),
+        writer.uint32(18).fork()
+      ).ldelim();
+    }
+    if (message.durationUntilDecay !== undefined) {
+      Duration.encode(
+        message.durationUntilDecay,
+        writer.uint32(26).fork()
+      ).ldelim();
+    }
+    if (message.durationOfDecay !== undefined) {
+      Duration.encode(
+        message.durationOfDecay,
+        writer.uint32(34).fork()
+      ).ldelim();
+    }
+    if (message.claimDenom !== "") {
+      writer.uint32(42).string(message.claimDenom);
+    }
+    for (const v of message.allowedClaimers) {
+      ClaimAuthorization.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
 
-	decode(input: Reader | Uint8Array, length?: number): Params {
-		const reader = input instanceof Uint8Array ? new Reader(input) : input;
-		let end = length === undefined ? reader.len : reader.pos + length;
-		const message = globalThis.Object.create(baseParams) as Params;
-		while (reader.pos < end) {
-			const tag = reader.uint32();
-			switch (tag >>> 3) {
-				case 1:
-					message.airdropStartTime = fromTimestamp(
-						Timestamp.decode(reader, reader.uint32())
-					);
-					break;
-				case 2:
-					message.durationUntilDecay = Duration.decode(
-						reader,
-						reader.uint32()
-					);
-					break;
-				case 3:
-					message.durationOfDecay = Duration.decode(
-						reader,
-						reader.uint32()
-					);
-					break;
-				case 4:
-					message.claimDenom = reader.string();
-					break;
-				default:
-					reader.skipType(tag & 7);
-					break;
-			}
-		}
-		return message;
-	},
+  decode(input: Reader | Uint8Array, length?: number): Params {
+    const reader = input instanceof Uint8Array ? new Reader(input) : input;
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = globalThis.Object.create(baseParams) as Params;
+    message.allowedClaimers = [];
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.airdropEnabled = reader.bool();
+          break;
+        case 2:
+          message.airdropStartTime = fromTimestamp(
+            Timestamp.decode(reader, reader.uint32())
+          );
+          break;
+        case 3:
+          message.durationUntilDecay = Duration.decode(reader, reader.uint32());
+          break;
+        case 4:
+          message.durationOfDecay = Duration.decode(reader, reader.uint32());
+          break;
+        case 5:
+          message.claimDenom = reader.string();
+          break;
+        case 6:
+          message.allowedClaimers.push(
+            ClaimAuthorization.decode(reader, reader.uint32())
+          );
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
 
-	fromJSON(object: any): Params {
-		const message = globalThis.Object.create(baseParams) as Params;
-		if (
-			object.airdropStartTime !== undefined &&
-			object.airdropStartTime !== null
-		) {
-			message.airdropStartTime = fromJsonTimestamp(
-				object.airdropStartTime
-			);
-		} else {
-			message.airdropStartTime = undefined;
-		}
-		if (
-			object.durationUntilDecay !== undefined &&
-			object.durationUntilDecay !== null
-		) {
-			message.durationUntilDecay = Duration.fromJSON(
-				object.durationUntilDecay
-			);
-		} else {
-			message.durationUntilDecay = undefined;
-		}
-		if (
-			object.durationOfDecay !== undefined &&
-			object.durationOfDecay !== null
-		) {
-			message.durationOfDecay = Duration.fromJSON(object.durationOfDecay);
-		} else {
-			message.durationOfDecay = undefined;
-		}
-		if (object.claimDenom !== undefined && object.claimDenom !== null) {
-			message.claimDenom = String(object.claimDenom);
-		} else {
-			message.claimDenom = '';
-		}
-		return message;
-	},
+  fromJSON(object: any): Params {
+    const message = globalThis.Object.create(baseParams) as Params;
+    message.allowedClaimers = [];
+    if (object.airdropEnabled !== undefined && object.airdropEnabled !== null) {
+      message.airdropEnabled = Boolean(object.airdropEnabled);
+    } else {
+      message.airdropEnabled = false;
+    }
+    if (
+      object.airdropStartTime !== undefined &&
+      object.airdropStartTime !== null
+    ) {
+      message.airdropStartTime = fromJsonTimestamp(object.airdropStartTime);
+    } else {
+      message.airdropStartTime = undefined;
+    }
+    if (
+      object.durationUntilDecay !== undefined &&
+      object.durationUntilDecay !== null
+    ) {
+      message.durationUntilDecay = Duration.fromJSON(object.durationUntilDecay);
+    } else {
+      message.durationUntilDecay = undefined;
+    }
+    if (
+      object.durationOfDecay !== undefined &&
+      object.durationOfDecay !== null
+    ) {
+      message.durationOfDecay = Duration.fromJSON(object.durationOfDecay);
+    } else {
+      message.durationOfDecay = undefined;
+    }
+    if (object.claimDenom !== undefined && object.claimDenom !== null) {
+      message.claimDenom = String(object.claimDenom);
+    } else {
+      message.claimDenom = "";
+    }
+    if (
+      object.allowedClaimers !== undefined &&
+      object.allowedClaimers !== null
+    ) {
+      for (const e of object.allowedClaimers) {
+        message.allowedClaimers.push(ClaimAuthorization.fromJSON(e));
+      }
+    }
+    return message;
+  },
 
-	fromPartial(object: DeepPartial<Params>): Params {
-		const message = { ...baseParams } as Params;
-		if (
-			object.airdropStartTime !== undefined &&
-			object.airdropStartTime !== null
-		) {
-			message.airdropStartTime = object.airdropStartTime;
-		} else {
-			message.airdropStartTime = undefined;
-		}
-		if (
-			object.durationUntilDecay !== undefined &&
-			object.durationUntilDecay !== null
-		) {
-			message.durationUntilDecay = Duration.fromPartial(
-				object.durationUntilDecay
-			);
-		} else {
-			message.durationUntilDecay = undefined;
-		}
-		if (
-			object.durationOfDecay !== undefined &&
-			object.durationOfDecay !== null
-		) {
-			message.durationOfDecay = Duration.fromPartial(
-				object.durationOfDecay
-			);
-		} else {
-			message.durationOfDecay = undefined;
-		}
-		if (object.claimDenom !== undefined && object.claimDenom !== null) {
-			message.claimDenom = object.claimDenom;
-		} else {
-			message.claimDenom = '';
-		}
-		return message;
-	},
+  fromPartial(object: DeepPartial<Params>): Params {
+    const message = { ...baseParams } as Params;
+    message.allowedClaimers = [];
+    if (object.airdropEnabled !== undefined && object.airdropEnabled !== null) {
+      message.airdropEnabled = object.airdropEnabled;
+    } else {
+      message.airdropEnabled = false;
+    }
+    if (
+      object.airdropStartTime !== undefined &&
+      object.airdropStartTime !== null
+    ) {
+      message.airdropStartTime = object.airdropStartTime;
+    } else {
+      message.airdropStartTime = undefined;
+    }
+    if (
+      object.durationUntilDecay !== undefined &&
+      object.durationUntilDecay !== null
+    ) {
+      message.durationUntilDecay = Duration.fromPartial(
+        object.durationUntilDecay
+      );
+    } else {
+      message.durationUntilDecay = undefined;
+    }
+    if (
+      object.durationOfDecay !== undefined &&
+      object.durationOfDecay !== null
+    ) {
+      message.durationOfDecay = Duration.fromPartial(object.durationOfDecay);
+    } else {
+      message.durationOfDecay = undefined;
+    }
+    if (object.claimDenom !== undefined && object.claimDenom !== null) {
+      message.claimDenom = object.claimDenom;
+    } else {
+      message.claimDenom = "";
+    }
+    if (
+      object.allowedClaimers !== undefined &&
+      object.allowedClaimers !== null
+    ) {
+      for (const e of object.allowedClaimers) {
+        message.allowedClaimers.push(ClaimAuthorization.fromPartial(e));
+      }
+    }
+    return message;
+  },
 
-	toJSON(message: Params): unknown {
-		const obj: any = {};
-		message.airdropStartTime !== undefined &&
-			(obj.airdropStartTime =
-				message.airdropStartTime !== undefined
-					? message.airdropStartTime.toISOString()
-					: null);
-		message.durationUntilDecay !== undefined &&
-			(obj.durationUntilDecay = message.durationUntilDecay
-				? Duration.toJSON(message.durationUntilDecay)
-				: undefined);
-		message.durationOfDecay !== undefined &&
-			(obj.durationOfDecay = message.durationOfDecay
-				? Duration.toJSON(message.durationOfDecay)
-				: undefined);
-		message.claimDenom !== undefined &&
-			(obj.claimDenom = message.claimDenom);
-		return obj;
-	},
+  toJSON(message: Params): unknown {
+    const obj: any = {};
+    message.airdropEnabled !== undefined &&
+      (obj.airdropEnabled = message.airdropEnabled);
+    message.airdropStartTime !== undefined &&
+      (obj.airdropStartTime =
+        message.airdropStartTime !== undefined
+          ? message.airdropStartTime.toISOString()
+          : null);
+    message.durationUntilDecay !== undefined &&
+      (obj.durationUntilDecay = message.durationUntilDecay
+        ? Duration.toJSON(message.durationUntilDecay)
+        : undefined);
+    message.durationOfDecay !== undefined &&
+      (obj.durationOfDecay = message.durationOfDecay
+        ? Duration.toJSON(message.durationOfDecay)
+        : undefined);
+    message.claimDenom !== undefined && (obj.claimDenom = message.claimDenom);
+    if (message.allowedClaimers) {
+      obj.allowedClaimers = message.allowedClaimers.map((e) =>
+        e ? ClaimAuthorization.toJSON(e) : undefined
+      );
+    } else {
+      obj.allowedClaimers = [];
+    }
+    return obj;
+  },
 };
 
 declare var self: any | undefined;
 declare var window: any | undefined;
 var globalThis: any = (() => {
-	if (typeof globalThis !== 'undefined') return globalThis;
-	if (typeof self !== 'undefined') return self;
-	if (typeof window !== 'undefined') return window;
-	if (typeof global !== 'undefined') return global;
-	throw 'Unable to locate global object';
+  if (typeof globalThis !== "undefined") return globalThis;
+  if (typeof self !== "undefined") return self;
+  if (typeof window !== "undefined") return window;
+  if (typeof global !== "undefined") return global;
+  throw "Unable to locate global object";
 })();
 
 type Builtin =
-	| Date
-	| Function
-	| Uint8Array
-	| string
-	| number
-	| undefined
-	| Long;
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | undefined
+  | Long;
 export type DeepPartial<T> = T extends Builtin
-	? T
-	: T extends Array<infer U>
-	? Array<DeepPartial<U>>
-	: T extends ReadonlyArray<infer U>
-	? ReadonlyArray<DeepPartial<U>>
-	: T extends {}
-	? { [K in keyof T]?: DeepPartial<T[K]> }
-	: Partial<T>;
+  ? T
+  : T extends Array<infer U>
+  ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U>
+  ? ReadonlyArray<DeepPartial<U>>
+  : T extends {}
+  ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
 
 function toTimestamp(date: Date): Timestamp {
-	const seconds = numberToLong(date.getTime() / 1_000);
-	const nanos = (date.getTime() % 1_000) * 1_000_000;
-	return { seconds, nanos };
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): Date {
-	let millis = t.seconds.toNumber() * 1_000;
-	millis += t.nanos / 1_000_000;
-	return new Date(millis);
+  let millis = t.seconds.toNumber() * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis);
 }
 
 function fromJsonTimestamp(o: any): Date {
-	if (o instanceof Date) {
-		return o;
-	} else if (typeof o === 'string') {
-		return new Date(o);
-	} else {
-		return fromTimestamp(Timestamp.fromJSON(o));
-	}
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
 }
 
 function numberToLong(number: number) {
-	return Long.fromNumber(number);
+  return Long.fromNumber(number);
 }
 
 if (util.Long !== Long) {
-	util.Long = Long as any;
-	configure();
+  util.Long = Long as any;
+  configure();
 }
